@@ -22,7 +22,16 @@ const GithubProvider = ({ children }) => {
 
   const searchGithubUser = async (user) => {
     //toggleError
+    toggleError();
     //setloading(true)
+    const response = await axios(`${rootUrl}/users/${user}`).catch((err) =>
+      console.log(err)
+    );
+    if (response) {
+      setGithubUsers(response.data);
+    } else {
+      toggleError(true, "there is no user with the username");
+    }
   };
   // chech rate
   const checkRequests = () => {
