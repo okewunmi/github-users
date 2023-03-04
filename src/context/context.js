@@ -16,22 +16,42 @@ const GithubProvider = ({ children }) => {
   // requestloading
 
   const [requests, setRequests] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   // error
   const [error, setError] = useState({ show: false, meg: "" });
 
   const searchGithubUser = async (user) => {
     //toggleError
     toggleError();
-    //setloading(true)
+    setIsLoading(true);
     const response = await axios(`${rootUrl}/users/${user}`).catch((err) =>
       console.log(err)
     );
     if (response) {
       setGithubUsers(response.data);
+      const { login, followers_url } = response.data;
+      //repo
+
+      await Promise.allSettled([
+        axios(`${rootUrl}/users/${login}/repos?per_page=100`),
+        axios(`${followers_url}?per_page=100`),
+      ])
+        .then((results) => {
+          const [repo, followers] = results;
+          const status = "fulfilled";
+          if (repo.status === status) {
+            setRepo(repo.value.data);
+          }
+          if (followers.status === status) {
+            setFellowers(followers.value.data);
+          }
+        })
+        .catch((err) => console.log(err));
     } else {
       toggleError(true, "there is no user with the username");
     }
+    checkRequests();
+    setIsLoading(false);
   };
   // chech rate
   const checkRequests = () => {
@@ -56,7 +76,15 @@ const GithubProvider = ({ children }) => {
 
   return (
     <GithubContext.Provider
-      value={{ githubUser, repo, followers, requests, error, searchGithubUser }}
+      value={{
+        githubUser,
+        repo,
+        followers,
+        requests,
+        error,
+        searchGithubUser,
+        isLoading,
+      }}
     >
       {children}
     </GithubContext.Provider>
